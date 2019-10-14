@@ -297,6 +297,7 @@ class Visualizer:
         self.img = np.asarray(img_rgb).clip(0, 255).astype(np.uint8)
         self.metadata = metadata
         self.output = VisImage(self.img, scale=scale)
+        self.outputs = []
         self.cpu_device = torch.device("cpu")
 
         # too small texts are useless, therefore clamp to 9
@@ -352,7 +353,7 @@ class Visualizer:
             assigned_colors=colors,
             alpha=alpha,
         )
-        return self.output
+        return self.outputs
 
     def draw_sem_seg(self, sem_seg, area_threshold=None, alpha=0.8):
         """
@@ -554,12 +555,17 @@ class Visualizer:
 
         for i in range(num_instances):
             color = assigned_colors[i]
-            if boxes is not None:
-                self.draw_box(boxes[i], edge_color=color)
 
             if masks is not None:
+                self.output = VisImage(self.img, self.output.scale)
                 for segment in masks[i].polygons:
                     self.draw_polygon(segment.reshape(-1, 2), color, alpha=alpha)
+                self.outputs.append((self.output.get_image(), labels[i].split(' ')[0]))
+
+            continue
+
+            if boxes is not None:
+                self.draw_box(boxes[i], edge_color=color)
 
             if labels is not None:
                 # first get a box
